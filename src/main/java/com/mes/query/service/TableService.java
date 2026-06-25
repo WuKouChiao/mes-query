@@ -66,15 +66,18 @@ public class TableService {
     }
 
     /**
-     * 分页查询表数据（支持等值过滤）
+     * 分页查询表数据（支持等值过滤和排序）
      *
      * @param tableName 表名（需通过白名单校验）
      * @param page      页码，从 1 开始
      * @param size      每页条数，最大 500
-     * @param filter    等值过滤，格式 "col1:val1,col2:val2"
+     * @param filter    等值过滤，JSON 格式 {"col1":"val1","col2":"val2"}
+     * @param sort      排序字段
+     * @param order     排序方向 asc/desc
      * @return 分页结果，每行数据为 Map（key 为列名，value 为列值）
      */
-    public PageVO<Map<String, Object>> queryTable(String tableName, int page, int size, String filter) throws SQLException {
+    public PageVO<Map<String, Object>> queryTable(String tableName, int page, int size, String filter,
+                                                   String sort, String order) throws SQLException {
         validateTable(tableName);
         if (size > MAX_PAGE_SIZE) size = MAX_PAGE_SIZE;
         if (page < 1) page = 1;
@@ -105,6 +108,16 @@ public class TableService {
             ResultSet rs = ps.executeQuery();
             rs.next();
             total = rs.getLong(1);
+        }
+
+        // 排序（校验 sort 字段为合法列名，order 仅允许 asc/desc）
+        Set<String> validColumns = new HashSet<>();
+        for (ColumnVO col : getColumns(tableName)) {
+            validColumns.add(col.getName());
+        }
+        if (sort != null && !sort.isEmpty() && validColumns.contains(sort)) {
+            String dir = "desc".equalsIgnoreCase(order) ? "DESC" : "ASC";
+            sql.append(" ORDER BY ").append(sort).append(" ").append(dir);
         }
 
         // 查数据（分页）
