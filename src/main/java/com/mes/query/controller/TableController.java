@@ -47,7 +47,7 @@ public class TableController {
      * @param tableName 表名
      * @param page      页码，从 1 开始，默认 1
      * @param size      每页条数，默认 50，最大 500
-     * @param filter    等值过滤，格式 "col1:val1,col2:val2"
+     * @param filter    等值过滤，JSON 格式 {\"col1\":\"val1\",\"col2\":\"val2\"}
      */
     @GetMapping("/{tableName}")
     public ResultVO<PageVO<Map<String, Object>>> queryTable(

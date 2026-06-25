@@ -153,6 +153,9 @@ public class TableService {
     /**
      * 列名白名单校验 + 过滤条件解析
      */
+    /**
+     * 列名白名单校验 + 过滤条件解析（JSON 格式）
+     */
     private Map<String, String> parseFilter(String filter, String tableName) throws SQLException {
         Map<String, String> result = new LinkedHashMap<>();
         if (filter == null || filter.isEmpty()) {
@@ -165,16 +168,21 @@ public class TableService {
             validColumns.add(col.getName());
         }
 
-        for (String kv : filter.split(",")) {
-            String[] parts = kv.split(":", 2);
-            if (parts.length != 2) {
-                throw new BusinessException(400, "过滤格式错误，应为 col1:val1,col2:val2");
+        // JSON 解析：{"col1":"val1","col2":"val2"}
+        try {
+            com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+            @SuppressWarnings("unchecked")
+            Map<String, Object> raw = mapper.readValue(filter, Map.class);
+            for (Map.Entry<String, Object> entry : raw.entrySet()) {
+                String col = entry.getKey();
+                if (!validColumns.contains(col)) {
+                    throw new BusinessException(400, "表中不存在列: " + col);
+                }
+                result.put(col, String.valueOf(entry.getValue()));
             }
-            String col = parts[0].trim();
-            if (!validColumns.contains(col)) {
-                throw new BusinessException(400, "表中不存在列: " + col);
-            }
-            result.put(col, parts[1].trim());
+        } catch (Exception e) {
+            if (e instanceof BusinessException) throw (BusinessException) e;
+            throw new BusinessException(400, "filter 格式错误，应为 JSON: {\"col1\":\"val1\",\"col2\":\"val2\"}");
         }
         return result;
     }
