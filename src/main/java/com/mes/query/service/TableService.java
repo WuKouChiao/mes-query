@@ -28,6 +28,12 @@ public class TableService {
     /** 缓存的表名白名单，项目启动后延迟加载 */
     private volatile Set<String> tableCache;
 
+    /** 黑名单：禁止通用查询的表（大表，必须走专用接口 + 索引） */
+    private static final Set<String> TABLE_BLACKLIST = new HashSet<>(Arrays.asList(
+        "dc_station_to_electricity",
+        "dc_station_to_voltage"
+    ));
+
     /**
      * 列出所有表名
      */
@@ -40,6 +46,7 @@ public class TableService {
             }
         }
         tables.sort(String::compareTo);
+        tables.removeIf(TABLE_BLACKLIST::contains);
         return tables;
     }
 
@@ -161,6 +168,9 @@ public class TableService {
         }
         if (!tableCache.contains(tableName)) {
             throw new BusinessException(400, "表不存在: " + tableName);
+        }
+        if (TABLE_BLACKLIST.contains(tableName)) {
+            throw new BusinessException(400, "大表请走专用接口，不支持通用查询: " + tableName);
         }
     }
 
