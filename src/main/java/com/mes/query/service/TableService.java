@@ -46,7 +46,6 @@ public class TableService {
             }
         }
         tables.sort(String::compareTo);
-        tables.removeIf(TABLE_BLACKLIST::contains);
         return tables;
     }
 
@@ -170,7 +169,7 @@ public class TableService {
             throw new BusinessException(400, "表不存在: " + tableName);
         }
         if (TABLE_BLACKLIST.contains(tableName)) {
-            throw new BusinessException(400, "大表请走专用接口，不支持通用查询: " + tableName);
+            throw new BusinessException(400, "此表为数据采集大表，请使用专用接口 /api/dc/ 查询，不支持通用表查询: " + tableName);
         }
     }
 
