@@ -1,6 +1,7 @@
 package com.mes.query.service;
 
 import com.mes.query.common.BusinessException;
+import com.mes.query.common.SqlTimer;
 import com.mes.query.vo.ColumnVO;
 import com.mes.query.vo.PageVO;
 import lombok.extern.slf4j.Slf4j;
@@ -20,8 +21,6 @@ public class TableService {
 
     private static final String DATABASE = "ddcoreprd";
     private static final int MAX_PAGE_SIZE = 500;
-    /** 慢查询阈值（毫秒），超过此值的 SQL 输出 warn 日志 */
-    private static final long SLOW_QUERY_THRESHOLD_MS = 1000;
 
     @Autowired
     private DataSource dataSource;
@@ -143,12 +142,7 @@ public class TableService {
             }
         }
 
-        long elapsed = System.currentTimeMillis() - startTime;
-        log.info("查询表 {} 完成, total={}, page={}/{}, filters={}, elapsed={}ms", tableName, total, page,
-                (int) Math.ceil((double) total / size), filters.keySet(), elapsed);
-        if (elapsed > SLOW_QUERY_THRESHOLD_MS) {
-            log.warn("慢查询 table={} sql={} params={} elapsed={}ms", tableName, sql, paramValues, elapsed);
-        }
+        long elapsed = SqlTimer.logQuery(tableName, sql.toString(), paramValues, startTime);
         return new PageVO<>(total, page, size, rows);
     }
 

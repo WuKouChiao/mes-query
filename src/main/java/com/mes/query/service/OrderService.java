@@ -1,6 +1,7 @@
 package com.mes.query.service;
 
 import com.mes.query.common.BusinessException;
+import com.mes.query.common.SqlTimer;
 import com.mes.query.vo.OrderDetailVO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,8 +22,6 @@ public class OrderService {
     private DataSource dataSource;
 
     private static final String DATABASE = "ddcoreprd";
-    /** 慢查询阈值（毫秒） */
-    private static final long SLOW_QUERY_THRESHOLD_MS = 1000;
 
     /**
      * 查询订单完整信息：订单主表 + 客户 + 明细
@@ -61,11 +60,7 @@ public class OrderService {
         );
         vo.setDetails(details);
 
-        long elapsed = System.currentTimeMillis() - startTime;
-        log.info("订单聚合查询完成: {}, 明细数={}, elapsed={}ms", orderNo, details.size(), elapsed);
-        if (elapsed > SLOW_QUERY_THRESHOLD_MS) {
-            log.warn("慢查询 orderNo={} elapsed={}ms", orderNo, elapsed);
-        }
+        SqlTimer.logQuery("订单聚合_" + orderNo, "getOrderDetail", "", startTime);
         return vo;
     }
 
