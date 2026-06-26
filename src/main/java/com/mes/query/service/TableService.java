@@ -20,6 +20,8 @@ public class TableService {
 
     private static final String DATABASE = "ddcoreprd";
     private static final int MAX_PAGE_SIZE = 500;
+    /** 慢查询阈值（毫秒），超过此值的 SQL 输出 warn 日志 */
+    private static final long SLOW_QUERY_THRESHOLD_MS = 1000;
 
     @Autowired
     private DataSource dataSource;
@@ -78,6 +80,7 @@ public class TableService {
      */
     public PageVO<Map<String, Object>> queryTable(String tableName, int page, int size, String filter,
                                                    String sort, String order) throws SQLException {
+        long startTime = System.currentTimeMillis();
         validateTable(tableName);
         if (size > MAX_PAGE_SIZE) size = MAX_PAGE_SIZE;
         if (page < 1) page = 1;
@@ -140,8 +143,12 @@ public class TableService {
             }
         }
 
-        log.info("查询表 {} 完成, total={}, page={}/{}, filters={}", tableName, total, page,
-                (int) Math.ceil((double) total / size), filters.keySet());
+        long elapsed = System.currentTimeMillis() - startTime;
+        log.info("查询表 {} 完成, total={}, page={}/{}, filters={}, elapsed={}ms", tableName, total, page,
+                (int) Math.ceil((double) total / size), filters.keySet(), elapsed);
+        if (elapsed > SLOW_QUERY_THRESHOLD_MS) {
+            log.warn("慢查询 table={} sql={} params={} elapsed={}ms", tableName, sql, paramValues, elapsed);
+        }
         return new PageVO<>(total, page, size, rows);
     }
 

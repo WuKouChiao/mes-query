@@ -21,6 +21,8 @@ public class OrderService {
     private DataSource dataSource;
 
     private static final String DATABASE = "ddcoreprd";
+    /** 慢查询阈值（毫秒） */
+    private static final long SLOW_QUERY_THRESHOLD_MS = 1000;
 
     /**
      * 查询订单完整信息：订单主表 + 客户 + 明细
@@ -29,6 +31,7 @@ public class OrderService {
      * @param site    站点
      */
     public OrderDetailVO getOrderDetail(String orderNo, String site) throws SQLException {
+        long startTime = System.currentTimeMillis();
         OrderDetailVO vo = new OrderDetailVO();
 
         // 1. 查订单主表
@@ -58,7 +61,11 @@ public class OrderService {
         );
         vo.setDetails(details);
 
-        log.info("订单聚合查询完成: {}, 明细数={}", orderNo, details.size());
+        long elapsed = System.currentTimeMillis() - startTime;
+        log.info("订单聚合查询完成: {}, 明细数={}, elapsed={}ms", orderNo, details.size(), elapsed);
+        if (elapsed > SLOW_QUERY_THRESHOLD_MS) {
+            log.warn("慢查询 orderNo={} elapsed={}ms", orderNo, elapsed);
+        }
         return vo;
     }
 
